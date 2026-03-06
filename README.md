@@ -28,7 +28,6 @@ python app.py
 
 Visit: http://localhost:5000
 
-![Uploading image.png…]()
 
 
 ## Tech Stack
