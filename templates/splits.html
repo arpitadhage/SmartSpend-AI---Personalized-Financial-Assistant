@@ -1,0 +1,101 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Splits · SmartSpend AI</title>
+<link rel="stylesheet" href="/static/css/theme.css"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+</head><body>
+<nav class="nav">
+  <a href="/" class="nav-brand"><div class="ico">🧠</div><div class="lbl">Smart<span>Spend</span></div></a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a><a href="/expenses">Expenses</a>
+    <a href="/goals">Goals</a><a href="/splits" class="active">Splits</a>
+    <a href="/gamification">Rewards</a><a href="/predictor">Predictor</a>
+    <button class="btn-out" onclick="logout()">⏻ Exit</button>
+  </div>
+</nav>
+<div class="pg">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+    <div style="font-family:var(--ffd);font-size:.95rem;letter-spacing:.1em">//&nbsp;<span style="color:var(--cyan)">SPLIT EXPENSES</span></div>
+    <button class="btn bc" onclick="location.href='/expenses'"><i class="fas fa-plus"></i> Add Split (via Expenses)</button>
+  </div>
+
+  <div class="sgrid" style="grid-template-columns:repeat(auto-fit,minmax(175px,1fr));margin-bottom:18px">
+    <div class="sc"><div class="bot" style="background:var(--pink)"></div><div class="slbl">Total Pending</div><div class="sval gp" id="totPend">₹0</div></div>
+    <div class="sc"><div class="bot" style="background:var(--green)"></div><div class="slbl">People Owe You</div><div class="sval gg" id="pplCount">0</div></div>
+    <div class="sc"><div class="bot" style="background:var(--cyan)"></div><div class="slbl">All Splits</div><div class="sval gc" id="splitsCount">0</div></div>
+  </div>
+
+  <div class="col2" id="mainGrid">
+    <!-- Balances summary -->
+    <div>
+      <div class="sl"><i class="fas fa-users" style="color:var(--cyan)"></i> Balances by Person</div>
+      <div id="balances"><div class="empty"><i class="fas fa-handshake"></i><p>No splits yet</p></div></div>
+    </div>
+    <!-- All splits -->
+    <div>
+      <div class="sl"><i class="fas fa-list" style="color:var(--purple)"></i> All Split Expenses</div>
+      <div id="splitsList"><div class="empty"><p>Loading...</p></div></div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const T=()=>localStorage.getItem('token');
+const H=()=>({'Content-Type':'application/json','Authorization':'Bearer '+T()});
+
+async function loadSplits(){
+  const r=await fetch('/api/splits',{headers:H()});
+  const d=await r.json();
+  document.getElementById('totPend').textContent='₹'+Math.round(d.total_pending||0).toLocaleString();
+  const bals=d.balances||[];
+  document.getElementById('pplCount').textContent=bals.filter(b=>b.pending>0).length;
+  document.getElementById('splitsCount').textContent=(d.splits||[]).length;
+
+  // Balances
+  const bEl=document.getElementById('balances');
+  if(!bals.length){bEl.innerHTML='<div class="empty"><i class="fas fa-handshake"></i><p>No splits yet. Add via Expenses → Split tab</p></div>';}
+  else{
+    bEl.innerHTML=bals.map(b=>`<div class="card hc" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+        <div style="font-weight:700;font-family:var(--ffb)">${b.name}</div>
+        <span class="bdg ${b.pending>0?'bp2':'bg3'}">${b.pending>0?'Pending':'Settled'}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:.78rem">
+        <div style="text-align:center"><div style="font-family:var(--ffm);color:var(--pink)">₹${Math.round(b.total_owed).toLocaleString()}</div><div style="color:var(--txtd)">Total Owed</div></div>
+        <div style="text-align:center"><div style="font-family:var(--ffm);color:var(--green)">₹${Math.round(b.settled||0).toLocaleString()}</div><div style="color:var(--txtd)">Settled</div></div>
+        <div style="text-align:center"><div style="font-family:var(--ffm);color:var(--amber)">₹${Math.round(b.pending||0).toLocaleString()}</div><div style="color:var(--txtd)">Pending</div></div>
+      </div>
+    </div>`).join('');
+  }
+
+  // Splits list
+  const sEl=document.getElementById('splitsList');
+  const splits=d.splits||[];
+  if(!splits.length){sEl.innerHTML='<div class="empty"><i class="fas fa-receipt"></i><p>No splits recorded</p></div>';return;}
+  sEl.innerHTML=splits.map(s=>`<div class="card" style="margin-bottom:9px">
+    <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:7px">
+      <div>
+        <div style="font-weight:600;font-size:.88rem">${s.merchant||'Shared Expense'}</div>
+        <div style="font-size:.7rem;color:var(--txtd);margin-top:2px">${s.ower_name} owes you · ${new Date(s.created_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--ffm);font-size:.9rem;color:${s.is_settled?'var(--green)':'var(--amber)'}">₹${Math.round(s.amount_owed).toLocaleString()}</div>
+        <span class="bdg ${s.is_settled?'bg3':'ba2'}" style="margin-top:3px;display:inline-block">${s.is_settled?'✅ Settled':'⏳ Pending'}</span>
+      </div>
+    </div>
+    ${!s.is_settled?`<button class="btn bg2" style="font-size:.74rem;padding:5px 12px" onclick="settle(${s.id})">✓ Mark Settled</button>`:''}
+  </div>`).join('');
+}
+
+async function settle(id){
+  await fetch(`/api/splits/${id}/settle`,{method:'PUT',headers:H()});
+  showT('✅ Marked as settled!','ok');
+  loadSplits();
+}
+
+function showT(m,t=''){const el=document.getElementById('toast');el.textContent=m;el.className='toast'+(t?' '+t:'');el.style.display='block';setTimeout(()=>el.style.display='none',3200);}
+function logout(){localStorage.clear();location.href='/login';}
+if(!T())location.href='/login';
+loadSplits();
+</script>
+</body></html>

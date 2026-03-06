@@ -1,0 +1,38 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Register · SmartSpend AI</title>
+<link rel="stylesheet" href="/static/css/theme.css"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+</head><body>
+<div class="awrap">
+  <div class="acard">
+    <div class="alogo">
+      <div class="amark">⚡</div>
+      <h1>Create <span>Account</span></h1>
+      <p>Start your financial intelligence journey</p>
+    </div>
+    <div id="msg" class="alert aerr"></div>
+    <div class="fg"><label class="fl">Full Name</label><input type="text" class="fi" id="name" placeholder="Arpita Dhage"/></div>
+    <div class="fg"><label class="fl">Email</label><input type="email" class="fi" id="email" placeholder="you@example.com"/></div>
+    <div class="fg"><label class="fl">Password (min 6 chars)</label><input type="password" class="fi" id="pw" placeholder="••••••••"/></div>
+    <button class="btn bp" style="width:100%;justify-content:center;padding:11px" onclick="doReg()"><i class="fas fa-rocket"></i> GET STARTED</button>
+    <div style="text-align:center;margin-top:14px;font-size:.82rem;color:var(--txtd)">Have account? <a href="/login" style="color:var(--cyan);text-decoration:none">Sign in →</a></div>
+  </div>
+</div>
+<script>
+async function doReg(){
+  const name=document.getElementById('name').value.trim();
+  const email=document.getElementById('email').value.trim();
+  const pw=document.getElementById('pw').value;
+  const msg=document.getElementById('msg');
+  if(!name||!email||!pw){msg.textContent='All fields required';msg.style.display='block';return;}
+  try{
+    const r=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password:pw})});
+    const d=await r.json();
+    if(r.ok){localStorage.setItem('token',d.token);localStorage.setItem('user',JSON.stringify(d.user));location.href='/dashboard';}
+    else{msg.textContent=d.error||'Registration failed';msg.style.display='block';}
+  }catch(e){msg.textContent='Connection error';msg.style.display='block';}
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter')doReg();});
+</script>
+</body></html>

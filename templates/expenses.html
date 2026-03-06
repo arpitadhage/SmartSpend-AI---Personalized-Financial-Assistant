@@ -1,0 +1,347 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Expenses · SmartSpend AI</title>
+<link rel="stylesheet" href="/static/css/theme.css"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<style>
+.erow{display:flex;align-items:center;gap:9px;padding:10px 13px;border-radius:9px;transition:.15s;border:1px solid transparent}
+.erow:hover{background:rgba(0,245,255,0.025);border-color:var(--bdr)}
+.eico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.92rem;flex-shrink:0}
+.imp-tag{font-size:.62rem;background:rgba(255,45,120,0.1);color:var(--pink);border:1px solid rgba(255,45,120,0.22);padding:1px 6px;border-radius:6px;margin-left:5px}
+.pbox{background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,0.18);border-radius:9px;padding:12px;margin-top:10px;display:none;font-size:.82rem;line-height:1.8}
+.pbox.fail{background:rgba(255,45,120,0.05);border-color:rgba(255,45,120,0.2)}
+.ocr-prev{max-width:100%;border-radius:8px;max-height:170px;object-fit:contain;margin-top:9px;display:none}
+.flt-row{display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.flt-row select{background:var(--bge);border:1px solid var(--bdr);color:var(--txt);padding:6px 11px;border-radius:7px;font-size:.78rem;font-family:var(--ffb);cursor:pointer;outline:none}
+.flt-row select:focus{border-color:var(--cyan)}
+.flt-row select option{background:var(--bge)}
+.pg-btns{display:flex;gap:5px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.pg-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--bdr);background:var(--bgc);color:var(--txtd);cursor:pointer;font-size:.75rem;font-family:var(--ffb);transition:.2s}
+.pg-btn.on,.pg-btn:hover{background:var(--cyan);border-color:var(--cyan);color:#000}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,245,255,0.2);border-top-color:var(--cyan);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head><body>
+<nav class="nav">
+  <a href="/" class="nav-brand"><div class="ico">🧠</div><div class="lbl">Smart<span>Spend</span></div></a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a>
+    <a href="/expenses" class="active">Expenses</a>
+    <a href="/goals">Goals</a>
+    <a href="/splits">Splits</a>
+    <a href="/gamification">Rewards</a>
+    <a href="/predictor">Predictor</a>
+    <button class="btn-out" onclick="logout()">⏻ Exit</button>
+  </div>
+</nav>
+<div class="pg">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+    <div style="font-family:var(--ffd);font-size:.95rem;letter-spacing:.1em;color:var(--txt)">//&nbsp;<span style="color:var(--cyan)">EXPENSE TRACKER</span></div>
+    <button class="btn bp" onclick="document.getElementById('addMod').classList.add('open')"><i class="fas fa-plus"></i> Add Expense</button>
+  </div>
+
+  <div class="sgrid" style="grid-template-columns:repeat(auto-fit,minmax(148px,1fr))">
+    <div class="sc"><div class="bot" style="background:var(--cyan)"></div><div class="slbl">Month Total</div><div class="sval gc" id="stT">₹0</div></div>
+    <div class="sc"><div class="bot" style="background:var(--pink)"></div><div class="slbl">Impulse Spend</div><div class="sval gp" id="stI">₹0</div></div>
+    <div class="sc"><div class="bot" style="background:var(--amber)"></div><div class="slbl">Transactions</div><div class="sval ga" id="stC">0</div></div>
+    <div class="sc"><div class="bot" style="background:var(--purple)"></div><div class="slbl">Top Category</div><div class="sval gv" style="font-size:1rem" id="stTop">–</div></div>
+  </div>
+
+  <div class="flt-row">
+    <select id="fMon" onchange="loadE()"></select>
+    <select id="fCat" onchange="loadE()">
+      <option value="">All Categories</option>
+      <option value="food">🍔 Food</option><option value="transport">🚗 Transport</option>
+      <option value="shopping">🛍️ Shopping</option><option value="entertainment">🎬 Entertainment</option>
+      <option value="health">💊 Health</option><option value="utilities">💡 Utilities</option>
+      <option value="groceries">🛒 Groceries</option><option value="travel">✈️ Travel</option><option value="other">📦 Other</option>
+    </select>
+    <button class="btn bgh" style="padding:6px 12px" onclick="loadE()"><i class="fas fa-sync" style="font-size:.72rem"></i></button>
+  </div>
+
+  <div class="card">
+    <div id="eList"><div class="empty"><i class="fas fa-receipt"></i><p>Loading...</p></div></div>
+    <div class="pg-btns" id="pgB"></div>
+  </div>
+</div>
+
+<!-- ADD EXPENSE MODAL -->
+<div class="mbg" id="addMod">
+  <div class="modal" style="max-width:520px">
+    <button class="mclose" onclick="document.getElementById('addMod').classList.remove('open')">×</button>
+    <div class="mtitle">⚡ ADD EXPENSE</div>
+
+    <div class="tbar">
+      <button class="tbtn active" onclick="swT('manual',this)">✍️ Manual</button>
+      <button class="tbtn" onclick="swT('sms',this)">📱 SMS Parse</button>
+      <button class="tbtn" onclick="swT('ocr',this)">🧾 Receipt OCR</button>
+      <button class="tbtn" onclick="swT('split',this)">👥 Split</button>
+    </div>
+
+    <!-- MANUAL -->
+    <div class="tpane active" id="tp-manual">
+      <div class="fg"><label class="fl">Amount (₹)*</label><input type="number" class="fi" id="mA" placeholder="450"/></div>
+      <div class="col2">
+        <div class="fg"><label class="fl">Category</label>
+          <select class="fs" id="mC">
+            <option value="food">🍔 Food</option><option value="transport">🚗 Transport</option>
+            <option value="shopping">🛍️ Shopping</option><option value="entertainment">🎬 Entertainment</option>
+            <option value="health">💊 Health</option><option value="utilities">💡 Utilities</option>
+            <option value="groceries">🛒 Groceries</option><option value="travel">✈️ Travel</option>
+            <option value="subscriptions">📱 Subscriptions</option><option value="other">📦 Other</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Payment Mode</label>
+          <select class="fs" id="mM">
+            <option value="upi">UPI / GPay</option><option value="card">Card</option>
+            <option value="cash">Cash</option><option value="netbanking">Netbanking</option>
+            <option value="wallet">Wallet</option><option value="emi">EMI</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Merchant / Payee</label><input class="fi" id="mMe" placeholder="Swiggy, Amazon, Zomato..."/></div>
+      <div class="col2">
+        <div class="fg"><label class="fl">Date &amp; Time</label><input type="datetime-local" class="fi" id="mDt"/></div>
+        <div class="fg"><label class="fl">Txn ID (optional)</label><input class="fi" id="mTx" placeholder="UPI Ref..."/></div>
+      </div>
+      <div id="impW" style="display:none;background:rgba(255,45,120,0.07);border:1px solid rgba(255,45,120,0.28);border-radius:8px;padding:9px 12px;color:#FF8FAB;font-size:.8rem;display:none;margin-bottom:10px">
+        ⚠️ <strong>Impulse Detected:</strong> <span id="impM"></span>
+      </div>
+      <button class="btn bp" style="width:100%;justify-content:center" onclick="saveM()"><i class="fas fa-check"></i> Save Expense</button>
+    </div>
+
+    <!-- SMS -->
+    <div class="tpane" id="tp-sms">
+      <p style="font-size:.79rem;color:var(--txtd);margin-bottom:10px">Paste any bank/UPI SMS or payment alert. The system auto-extracts amount, merchant &amp; category.</p>
+      <div class="fg"><label class="fl">SMS / Notification Text</label>
+        <textarea class="fi" id="smsT" placeholder="e.g. Rs.450.00 debited from A/c **1234 on 05-Mar to Swiggy UPI Ref 123456789&#10;or: Paid Rs 340 to Zomato via UPI&#10;or: INR 1200 sent to AMAZON Ref 887766"></textarea>
+      </div>
+      <button class="btn bc" onclick="parseSMS()"><i class="fas fa-magic"></i> Auto-Extract</button>
+      <div class="pbox" id="smsPB"></div>
+      <button class="btn bp" style="width:100%;justify-content:center;margin-top:11px;display:none" id="smsCB" onclick="confirmSMS()">✅ Confirm &amp; Save</button>
+    </div>
+
+    <!-- OCR -->
+    <div class="tpane" id="tp-ocr">
+      <p style="font-size:.79rem;color:var(--txtd);margin-bottom:10px">Upload a payment screenshot, receipt or transaction proof. <strong style="color:var(--cyan)">Tesseract OCR</strong> (runs locally — no API needed!) extracts all details.</p>
+      <div class="uz" id="ocrZ" onclick="document.getElementById('ocrF').click()">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <div style="font-size:.83rem;color:var(--txtd)">Click to upload or drag &amp; drop</div>
+        <div style="font-size:.68rem;color:var(--txtm);margin-top:2px">JPG, PNG, WebP · Max 5MB</div>
+      </div>
+      <input type="file" id="ocrF" accept="image/*" style="display:none" onchange="doOCR(event)"/>
+      <img id="ocrPrev" class="ocr-prev"/>
+      <div id="ocrLoad" style="display:none;text-align:center;padding:12px;font-size:.8rem;color:var(--cyan)"><span class="spin"></span> Running OCR on image...</div>
+      <div class="pbox" id="ocrPB"></div>
+      <button class="btn bp" style="width:100%;justify-content:center;margin-top:11px;display:none" id="ocrCB" onclick="confirmOCR()">✅ Confirm &amp; Save</button>
+    </div>
+
+    <!-- SPLIT -->
+    <div class="tpane" id="tp-split">
+      <p style="font-size:.79rem;color:var(--txtd);margin-bottom:10px">Record a shared expense and track who owes you.</p>
+      <div class="fg"><label class="fl">Total You Paid (₹)</label><input type="number" class="fi" id="spA" placeholder="1500"/></div>
+      <div class="fg"><label class="fl">Merchant / Occasion</label><input class="fi" id="spMe" placeholder="Dinner at Barbeque Nation..."/></div>
+      <div class="fg"><label class="fl">Category</label>
+        <select class="fs" id="spC"><option value="food">🍔 Food</option><option value="travel">✈️ Travel</option><option value="entertainment">🎬 Entertainment</option><option value="other">📦 Other</option></select>
+      </div>
+      <div class="sl" style="margin-bottom:8px">People who owe you</div>
+      <div id="spRows">
+        <div class="sprow"><input class="fi" placeholder="Friend's name" style="flex:2"/><input type="number" class="fi" placeholder="₹ they owe" style="flex:1"/><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--pink);cursor:pointer;font-size:1.1rem;padding:0 3px">×</button></div>
+      </div>
+      <button class="btn bgh" style="margin:7px 0 13px;font-size:.75rem" onclick="addSpRow()"><i class="fas fa-user-plus"></i> Add Person</button>
+      <button class="btn bp" style="width:100%;justify-content:center" onclick="saveSplit()"><i class="fas fa-save"></i> Save Split</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const T=()=>localStorage.getItem('token');
+const H=()=>({'Content-Type':'application/json','Authorization':'Bearer '+T()});
+const CC={food:'#FFB800',transport:'#2979FF',shopping:'#FF2D78',entertainment:'#9B5DE5',health:'#00E676',utilities:'#00F5FF',groceries:'#69F0AE',travel:'#FF6D00',subscriptions:'#AA00FF',other:'#455A64'};
+const CI={food:'🍔',transport:'🚗',shopping:'🛍️',entertainment:'🎬',health:'💊',utilities:'💡',groceries:'🛒',travel:'✈️',subscriptions:'📱',other:'📦'};
+let smsD=null, ocrD=null, curP=1;
+
+// Month select init
+(()=>{
+  const s=document.getElementById('fMon');
+  const n=new Date();
+  for(let i=0;i<6;i++){
+    const d=new Date(n.getFullYear(),n.getMonth()-i,1);
+    const o=document.createElement('option');
+    o.value=`${d.getMonth()+1}-${d.getFullYear()}`;
+    o.textContent=d.toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+    if(i===0)o.selected=true;
+    s.appendChild(o);
+  }
+  const dt=document.getElementById('mDt');
+  if(dt)dt.value=new Date().toISOString().slice(0,16);
+})();
+
+async function loadE(p=1){
+  curP=p;
+  const [mo,yr]=(document.getElementById('fMon').value||'').split('-').map(Number);
+  const cat=document.getElementById('fCat').value;
+  let url=`/api/expenses?page=${p}&per_page=15`;
+  if(mo&&yr){url+=`&month=${mo}&year=${yr}`;}
+  if(cat)url+=`&category=${cat}`;
+  const r=await fetch(url,{headers:H()});
+  const d=await r.json();
+  renderE(d.expenses||[]);
+  renderPg(d.pages||1,p);
+  if(mo&&yr){
+    const ar=await fetch(`/api/expenses/analytics?month=${mo}&year=${yr}`,{headers:H()});
+    const ad=await ar.json();
+    document.getElementById('stT').textContent='₹'+Math.round(ad.total||0).toLocaleString();
+    document.getElementById('stI').textContent='₹'+Math.round(ad.impulse_total||0).toLocaleString();
+    document.getElementById('stC').textContent=ad.count||0;
+    const top=Object.entries(ad.by_category||{}).sort((a,b)=>b[1]-a[1])[0];
+    document.getElementById('stTop').textContent=top?`${CI[top[0]]||''} ${top[0]}`:'–';
+  }
+}
+
+function renderE(list){
+  const el=document.getElementById('eList');
+  if(!list.length){el.innerHTML='<div class="empty"><i class="fas fa-receipt"></i><p>No expenses found for this filter</p></div>';return;}
+  el.innerHTML=list.map(e=>{
+    const dt=new Date(e.expense_date);
+    return `<div class="erow">
+      <div class="eico" style="background:${CC[e.category]||'#455A64'}18">${CI[e.category]||'📦'}</div>
+      <div style="flex:1">
+        <div style="font-size:.86rem;font-weight:600">${e.merchant||e.description||'Expense'}${e.is_impulse?'<span class="imp-tag">⚠️ Impulse</span>':''}</div>
+        <div style="font-size:.7rem;color:var(--txtd);margin-top:1px">${dt.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})} · ${e.category} · ${e.payment_mode}${e.entry_type!='manual'?' · 📌'+e.entry_type:''}${e.transaction_id?' · #'+e.transaction_id:''}</div>
+        ${e.impulse_reason?`<div style="font-size:.66rem;color:var(--pink);margin-top:1px">⚠️ ${e.impulse_reason}</div>`:''}
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-family:var(--ffm);font-size:.88rem;font-weight:700;color:var(--pink)">–₹${Math.round(e.amount).toLocaleString()}</div>
+        <button onclick="delE(${e.id})" style="background:rgba(255,45,120,0.07);border:1px solid rgba(255,45,120,0.18);color:var(--pink);padding:2px 7px;border-radius:5px;font-size:.65rem;cursor:pointer;margin-top:3px;font-family:var(--ffb)">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPg(tot,cur){
+  const el=document.getElementById('pgB');
+  if(tot<=1){el.innerHTML='';return;}
+  el.innerHTML=Array.from({length:Math.min(tot,10)},(_,i)=>i+1).map(i=>`<button class="pg-btn ${i===cur?'on':''}" onclick="loadE(${i})">${i}</button>`).join('');
+}
+
+function swT(name,btn){
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tpane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tp-'+name).classList.add('active');
+}
+
+async function saveM(){
+  const amt=parseFloat(document.getElementById('mA').value)||0;
+  if(!amt){showT('Enter amount','err');return;}
+  const dv=document.getElementById('mDt').value;
+  const body={amount:amt,category:document.getElementById('mC').value,merchant:document.getElementById('mMe').value,payment_mode:document.getElementById('mM').value,transaction_id:document.getElementById('mTx').value,expense_date:dv?new Date(dv).toISOString().slice(0,19):null,entry_type:'manual'};
+  const r=await fetch('/api/expenses/add',{method:'POST',headers:H(),body:JSON.stringify(body)});
+  const d=await r.json();
+  if(r.ok){
+    if(d.impulse&&d.impulse.is_impulse){
+      const w=document.getElementById('impW');
+      document.getElementById('impM').textContent=d.impulse.reason;
+      w.style.display='block';
+    }
+    showT('✅ Expense saved!','ok');
+    document.getElementById('addMod').classList.remove('open');
+    loadE();
+  }else showT(d.error||'Error','err');
+}
+
+async function parseSMS(){
+  const txt=document.getElementById('smsT').value.trim();
+  if(!txt){showT('Paste SMS first','err');return;}
+  const r=await fetch('/api/expenses/parse-sms',{method:'POST',headers:H(),body:JSON.stringify({sms_text:txt})});
+  const d=await r.json();
+  smsD=d;
+  const el=document.getElementById('smsPB');
+  el.style.display='block';
+  if(d.parsed){
+    el.className='pbox';
+    el.innerHTML=`✅ <b>Extracted!</b><br>💰 Amount: <b style="color:var(--green)">₹${d.amount}</b><br>🏪 Merchant: <b>${d.merchant||'Unknown'}</b><br>📁 Category: <b>${d.category}</b>${d.transaction_id?`<br>🔖 Txn: <b>#${d.transaction_id}</b>`:''}`;
+    document.getElementById('smsCB').style.display='block';
+  }else{
+    el.className='pbox fail';
+    el.innerHTML='❌ Could not parse. Try: "Rs.450 debited to Swiggy Ref 12345" or "Paid ₹340 to Zomato via UPI"';
+  }
+}
+
+async function confirmSMS(){
+  if(!smsD?.amount)return;
+  await fetch('/api/expenses/add',{method:'POST',headers:H(),body:JSON.stringify({amount:smsD.amount,category:smsD.category||'other',merchant:smsD.merchant||'',transaction_id:smsD.transaction_id||'',entry_type:'sms',payment_mode:'upi'})});
+  showT('✅ Saved from SMS!','ok');
+  document.getElementById('addMod').classList.remove('open');
+  loadE();
+}
+
+async function doOCR(evt){
+  const file=evt.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    const b64=e.target.result.split(',')[1];
+    const prev=document.getElementById('ocrPrev');
+    prev.src=e.target.result;prev.style.display='block';
+    document.getElementById('ocrLoad').style.display='block';
+    document.getElementById('ocrPB').style.display='none';
+    document.getElementById('ocrCB').style.display='none';
+    try{
+      const r=await fetch('/api/expenses/ocr',{method:'POST',headers:H(),body:JSON.stringify({image_base64:b64})});
+      const d=await r.json();
+      ocrD=d;
+      document.getElementById('ocrLoad').style.display='none';
+      const el=document.getElementById('ocrPB');
+      el.style.display='block';
+      if(d.parsed||d.amount){
+        el.className='pbox';
+        el.innerHTML=`✅ <b>OCR Extracted!</b><br>💰 Amount: <b style="color:var(--green)">₹${d.amount||'?'}</b><br>🏪 Merchant: <b>${d.merchant||'Unknown'}</b><br>📁 Category: <b>${d.category||'other'}</b><br>💳 Mode: <b>${d.payment_mode||'–'}</b>${d.transaction_id?`<br>🔖 Txn: <b>#${d.transaction_id}</b>`:''}`;
+        document.getElementById('ocrCB').style.display='block';
+      }else{
+        el.className='pbox fail';
+        el.innerHTML='❌ Could not extract. Ensure image has clear text with visible amount.<br><small style="color:var(--txtd)">Tip: Use screenshots of payment apps (GPay, PhonePe, HDFC app etc.)</small>';
+      }
+    }catch(e){document.getElementById('ocrLoad').style.display='none';showT('OCR failed','err');}
+  };
+  reader.readAsDataURL(file);
+}
+
+async function confirmOCR(){
+  if(!ocrD?.amount)return;
+  await fetch('/api/expenses/add',{method:'POST',headers:H(),body:JSON.stringify({amount:ocrD.amount,category:ocrD.category||'other',merchant:ocrD.merchant||'',payment_mode:ocrD.payment_mode||'other',transaction_id:ocrD.transaction_id||'',entry_type:'ocr'})});
+  showT('✅ Saved from receipt!','ok');
+  document.getElementById('addMod').classList.remove('open');
+  loadE();
+}
+
+function addSpRow(){
+  const d=document.createElement('div');d.className='sprow';
+  d.innerHTML='<input class="fi" placeholder="Friend\'s name" style="flex:2"/><input type="number" class="fi" placeholder="₹ they owe" style="flex:1"/><button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--pink);cursor:pointer;font-size:1.1rem;padding:0 3px">×</button>';
+  document.getElementById('spRows').appendChild(d);
+}
+
+async function saveSplit(){
+  const total=parseFloat(document.getElementById('spA').value)||0;
+  if(!total){showT('Enter total amount','err');return;}
+  const participants=[...document.querySelectorAll('.sprow')].map(m=>{const ins=m.querySelectorAll('input');return{name:ins[0].value,amount:parseFloat(ins[1].value)||0};}).filter(m=>m.name&&m.amount>0);
+  if(!participants.length){showT('Add at least one person','err');return;}
+  const r=await fetch('/api/splits/add',{method:'POST',headers:H(),body:JSON.stringify({total_amount:total,merchant:document.getElementById('spMe').value,category:document.getElementById('spC').value,participants})});
+  const d=await r.json();
+  if(r.ok){showT(`✅ Split saved! ₹${d.total_owed} owed to you`,'ok');document.getElementById('addMod').classList.remove('open');loadE();}
+  else showT(d.error||'Error','err');
+}
+
+async function delE(id){
+  if(!confirm('Delete this expense?'))return;
+  await fetch(`/api/expenses/${id}`,{method:'DELETE',headers:H()});
+  showT('Deleted');loadE();
+}
+
+function showT(m,t=''){const el=document.getElementById('toast');el.textContent=m;el.className='toast'+(t?' '+t:'');el.style.display='block';setTimeout(()=>el.style.display='none',3200);}
+function logout(){localStorage.clear();location.href='/login';}
+if(!T())location.href='/login';
+loadE();
+</script>
+</body></html>

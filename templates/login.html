@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Login · SmartSpend AI</title>
+<link rel="stylesheet" href="/static/css/theme.css"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+</head><body>
+<div class="awrap">
+  <div class="acard">
+    <div class="alogo">
+      <div class="amark">🧠</div>
+      <h1>Smart<span>Spend</span></h1>
+      <p>AI-Powered Finance Command Center</p>
+    </div>
+    <div id="msg" class="alert aerr"></div>
+    <div class="fg"><label class="fl">Email</label><input type="email" class="fi" id="email" placeholder="you@example.com"/></div>
+    <div class="fg"><label class="fl">Password</label><input type="password" class="fi" id="pw" placeholder="••••••••"/></div>
+    <button class="btn bp" style="width:100%;justify-content:center;padding:11px" onclick="doLogin()"><i class="fas fa-sign-in-alt"></i> SIGN IN</button>
+    <div style="text-align:center;margin-top:16px;font-size:.82rem;color:var(--txtd)">No account? <a href="/register" style="color:var(--cyan);text-decoration:none">Register →</a></div>
+  </div>
+</div>
+<script>
+async function doLogin(){
+  const email=document.getElementById('email').value;
+  const pw=document.getElementById('pw').value;
+  const msg=document.getElementById('msg');
+  msg.style.display='none';
+  try{
+    const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pw})});
+    const d=await r.json();
+    if(r.ok){localStorage.setItem('token',d.token);localStorage.setItem('user',JSON.stringify(d.user));location.href='/dashboard';}
+    else{msg.textContent=d.error||'Login failed';msg.style.display='block';}
+  }catch(e){msg.textContent='Connection error';msg.style.display='block';}
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+if(localStorage.getItem('token'))location.href='/dashboard';
+</script>
+</body></html>

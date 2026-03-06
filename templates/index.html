@@ -1,0 +1,69 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SmartSpend AI · Your Spending on Autopilot</title>
+<link rel="stylesheet" href="/static/css/theme.css"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<style>
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:60px 20px;position:relative}
+.hero-title{font-family:var(--ffd);font-size:clamp(2rem,5vw,4rem);font-weight:900;letter-spacing:.06em;line-height:1.1;margin-bottom:16px}
+.hero-title span{background:linear-gradient(135deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:1.15rem;color:var(--txtd);max-width:520px;margin:0 auto 32px;line-height:1.6}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.features{padding:60px 20px;max-width:1100px;margin:0 auto}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.feat-card{background:var(--bgc);border:1px solid var(--bdr);border-radius:14px;padding:20px;transition:all .25s;position:relative;overflow:hidden}
+.feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--fc,var(--cyan));opacity:.6}
+.feat-card:hover{transform:translateY(-3px);border-color:rgba(0,245,255,0.2);box-shadow:0 0 25px rgba(0,245,255,0.06)}
+.feat-icon{font-size:1.8rem;margin-bottom:11px;display:block}
+.feat-title{font-family:var(--ffd);font-size:.75rem;letter-spacing:.08em;color:var(--cyan);margin-bottom:6px}
+.feat-desc{font-size:.82rem;color:var(--txtd);line-height:1.5}
+.neon-border{border:1px solid rgba(0,245,255,0.3);box-shadow:0 0 30px rgba(0,245,255,0.08),inset 0 0 30px rgba(0,245,255,0.02)}
+</style>
+</head><body>
+<nav class="nav">
+  <a href="/" class="nav-brand"><div class="ico">🧠</div><div class="lbl">Smart<span>Spend</span></div></a>
+  <div class="nav-links">
+    <a href="/login">Sign In</a>
+    <a href="/register">Register</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div>
+    <div style="font-size:3.5rem;margin-bottom:16px;filter:drop-shadow(0 0 20px rgba(0,245,255,0.4))">🧠</div>
+    <div class="hero-title">Your Spending,<br><span>on Autopilot.</span></div>
+    <div class="hero-sub">AI-powered expense tracking with real OCR, impulse detection, financial health scoring, LeetCode-style streaks, and splitwise — built for hackathon winners.</div>
+    <div class="hero-btns">
+      <a href="/register" class="btn bp" style="padding:12px 28px;font-size:.9rem"><i class="fas fa-rocket"></i> Get Started Free</a>
+      <a href="/login" class="btn bc" style="padding:12px 28px;font-size:.9rem"><i class="fas fa-sign-in-alt"></i> Sign In</a>
+    </div>
+  </div>
+</div>
+
+<div class="features">
+  <div style="text-align:center;margin-bottom:30px">
+    <div style="font-family:var(--ffd);font-size:1.1rem;letter-spacing:.1em">FEATURES</div>
+    <div style="color:var(--txtd);font-size:.9rem;margin-top:6px">Everything you need to win the hackathon</div>
+  </div>
+  <div class="feat-grid">
+    <div class="feat-card" style="--fc:var(--cyan)"><span class="feat-icon">🧾</span><div class="feat-title">REAL TESSERACT OCR</div><div class="feat-desc">Upload any receipt screenshot. Tesseract AI extracts amount, merchant, category, transaction ID — no API key needed.</div></div>
+    <div class="feat-card" style="--fc:var(--pink)"><span class="feat-icon">⚠️</span><div class="feat-title">IMPULSE DETECTION</div><div class="feat-desc">Auto-detects late-night food orders, large impulse buys, midnight shopping. Flags with ⚠️ badge in real-time.</div></div>
+    <div class="feat-card" style="--fc:var(--amber)"><span class="feat-icon">🔥</span><div class="feat-title">LEETCODE STREAKS</div><div class="feat-desc">90-day spending heatmap like GitHub contributions. Stay under ₹200/day to keep your streak. 50-day badge milestone.</div></div>
+    <div class="feat-card" style="--fc:var(--purple)"><span class="feat-icon">❤️</span><div class="feat-title">HEALTH SCORE</div><div class="feat-desc">0-100 financial fitness score based on impulse %, goal progress, streak days, and earned points. Grade A-F.</div></div>
+    <div class="feat-card" style="--fc:var(--green)"><span class="feat-icon">🔮</span><div class="feat-title">AI SPENDING FORECAST</div><div class="feat-desc">3-month weighted trend predicts next month's spending. Visual chart with trend direction indicator.</div></div>
+    <div class="feat-card" style="--fc:var(--cyan)"><span class="feat-icon">⚡</span><div class="feat-title">PURCHASE SIMULATOR</div><div class="feat-desc">Before buying, simulate the impact on savings, monthly budget, and goal timelines. Get risk level: LOW/MEDIUM/HIGH.</div></div>
+    <div class="feat-card" style="--fc:var(--pink)"><span class="feat-icon">👥</span><div class="feat-title">SPLITWISE CLONE</div><div class="feat-desc">Split any expense with friends. Track who owes you, per-person balances, and mark as settled.</div></div>
+    <div class="feat-card" style="--fc:var(--amber)"><span class="feat-icon">🏆</span><div class="feat-title">GAMIFICATION</div><div class="feat-desc">12 achievement badges, 🪙 coins, leaderboard, daily challenges. Points for every financial action you take.</div></div>
+  </div>
+
+  <div style="text-align:center;margin-top:50px;padding:30px;background:var(--bgc);border-radius:18px;border:1px solid rgba(0,245,255,0.15);box-shadow:0 0 40px rgba(0,245,255,0.05)">
+    <div style="font-family:var(--ffd);font-size:.85rem;letter-spacing:.1em;color:var(--cyan);margin-bottom:8px">POWERED BY</div>
+    <div style="font-size:.85rem;color:var(--txtd)">Flask · SQLite · Tesseract OCR · OpenCV · Chart.js · PyJWT</div>
+    <div style="font-size:.75rem;color:var(--txtm);margin-top:5px">No external AI API needed — 100% local</div>
+  </div>
+</div>
+
+<script>
+if(localStorage.getItem('token'))location.href='/dashboard';
+</script>
+</body></html>

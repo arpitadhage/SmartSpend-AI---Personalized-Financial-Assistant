@@ -1,0 +1,179 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Rewards · SmartSpend AI</title>
+<link rel="stylesheet" href="/static/css/theme.css"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<style>
+.bdg-card{background:var(--bgc);border:1px solid var(--bdr);border-radius:12px;padding:15px;text-align:center;transition:all .25s;cursor:default}
+.bdg-card.earned{border-color:rgba(255,184,0,0.3);background:rgba(255,184,0,0.04)}
+.bdg-card.earned:hover{transform:translateY(-3px);box-shadow:0 0 20px rgba(255,184,0,0.12)}
+.bdg-card.locked{opacity:.4;filter:grayscale(.8)}
+.bdg-icon{font-size:2.2rem;display:block;margin-bottom:8px;line-height:1}
+.bdg-earned-icon{font-size:2.2rem;filter:drop-shadow(0 0 8px rgba(255,184,0,0.6))}
+.rank-1{color:var(--amber);text-shadow:0 0 10px rgba(255,184,0,0.5)}
+.rank-2{color:#C0C0C0}
+.rank-3{color:#CD7F32}
+</style>
+</head><body>
+<nav class="nav">
+  <a href="/" class="nav-brand"><div class="ico">🧠</div><div class="lbl">Smart<span>Spend</span></div></a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a><a href="/expenses">Expenses</a>
+    <a href="/goals">Goals</a><a href="/splits">Splits</a>
+    <a href="/gamification" class="active">Rewards</a><a href="/predictor">Predictor</a>
+    <button class="btn-out" onclick="logout()">⏻ Exit</button>
+  </div>
+</nav>
+<div class="pg">
+  <div style="font-family:var(--ffd);font-size:.95rem;letter-spacing:.1em;margin-bottom:18px">//&nbsp;<span style="color:var(--amber)">REWARDS & GAMIFICATION</span></div>
+
+  <!-- Points hero -->
+  <div class="card ha" style="margin-bottom:18px;background:linear-gradient(135deg,rgba(255,184,0,0.08),rgba(155,93,229,0.05))">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="font-size:3rem;filter:drop-shadow(0 0 12px rgba(255,184,0,0.6))">🪙</div>
+        <div>
+          <div style="font-size:.7rem;color:var(--txtd);text-transform:uppercase;letter-spacing:.08em">Your Balance</div>
+          <div style="font-family:var(--ffm);font-size:2.2rem;font-weight:700;color:var(--amber)" id="heroCoins">0</div>
+          <div style="font-size:.75rem;color:var(--txtd)" id="heroPts">0 total points</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="text-align:center;background:var(--bge);border-radius:9px;padding:11px 16px;border:1px solid var(--bdr)">
+          <div style="font-family:var(--ffm);font-size:1.3rem;font-weight:700;color:var(--green)" id="heroStreak">0</div>
+          <div style="font-size:.65rem;color:var(--txtd)">Day Streak 🔥</div>
+        </div>
+        <div style="text-align:center;background:var(--bge);border-radius:9px;padding:11px 16px;border:1px solid var(--bdr)">
+          <div style="font-family:var(--ffm);font-size:1.3rem;font-weight:700;color:var(--purple)" id="heroEarned">0</div>
+          <div style="font-size:.65rem;color:var(--txtd)">Badges Earned</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div>
+      <!-- ALL BADGES -->
+      <div class="sl"><i class="fas fa-trophy" style="color:var(--amber)"></i> All Badges</div>
+      <div id="allBadges" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:20px"></div>
+
+      <!-- HEATMAP (streak) -->
+      <div class="card ha">
+        <div class="sl"><i class="fas fa-fire" style="color:var(--amber)"></i> Spending Heatmap · 90 Days</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:80px;background:var(--bge);border-radius:8px;padding:9px;text-align:center;border:1px solid var(--bdr)">
+            <div style="font-family:var(--ffm);font-size:1.4rem;font-weight:700;color:var(--amber)" id="curS">0</div>
+            <div style="font-size:.62rem;color:var(--txtd)">Current 🔥</div>
+          </div>
+          <div style="flex:1;min-width:80px;background:var(--bge);border-radius:8px;padding:9px;text-align:center;border:1px solid var(--bdr)">
+            <div style="font-family:var(--ffm);font-size:1.4rem;font-weight:700;color:var(--purple)" id="bestS">0</div>
+            <div style="font-size:.62rem;color:var(--txtd)">Best 🏆</div>
+          </div>
+          <div style="flex:1;min-width:80px;background:var(--bge);border-radius:8px;padding:9px;text-align:center;border:1px solid var(--bdr)">
+            <div style="font-family:var(--ffm);font-size:1.4rem;font-weight:700;color:var(--green)" id="mnthS">0</div>
+            <div style="font-size:.62rem;color:var(--txtd)">This Month ✅</div>
+          </div>
+        </div>
+        <div style="font-size:.62rem;color:var(--txtm);margin-bottom:4px">🟢 Under ₹200/day &nbsp; 🔴 Over ₹200/day</div>
+        <div class="hmg" id="hmG"></div>
+        <div id="ms50" style="display:none;margin-top:10px;background:rgba(255,184,0,0.07);border:1px solid rgba(255,184,0,0.28);border-radius:7px;padding:8px 12px;font-size:.78rem;color:var(--amber);text-align:center">🏆 50-Day Streak Legend Badge Unlocked!</div>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div>
+      <div class="sl"><i class="fas fa-ranking-star" style="color:var(--cyan)"></i> Leaderboard</div>
+      <div class="card">
+        <div id="leaderboard"><div class="empty"><p>Loading...</p></div></div>
+      </div>
+
+      <div style="margin-top:14px">
+        <div class="sl"><i class="fas fa-tasks" style="color:var(--purple)"></i> Challenges</div>
+        <div style="display:grid;gap:9px" id="challenges"></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const T=()=>localStorage.getItem('token');
+const H=()=>({'Content-Type':'application/json','Authorization':'Bearer '+T()});
+const CHALLENGES=[
+  {icon:'☕',title:'No Coffee Week',desc:'Avoid Starbucks/Barista for 7 days',pts:20},
+  {icon:'🍳',title:'Home Chef',desc:'Cook every day for a week',pts:25},
+  {icon:'📺',title:'Subscription Audit',desc:'Review and cancel unused subscriptions',pts:15},
+  {icon:'🔥',title:'50-Day Streak',desc:'Stay under ₹200/day for 50 days',pts:100},
+  {icon:'💰',title:'₹10k Saver',desc:'Save ₹10,000 in any goal',pts:30},
+  {icon:'🧾',title:'Receipt Scanner',desc:'Use OCR to add 5 expenses',pts:15},
+];
+
+async function loadAll(){
+  const [r1,r2,r3]=await Promise.all([
+    fetch('/api/gamification/badges',{headers:H()}),
+    fetch('/api/gamification/leaderboard'),
+    fetch('/api/expenses/streaks',{headers:H()}),
+  ]);
+  const bd=await r1.json(), lb=await r2.json(), st=await r3.json();
+
+  document.getElementById('heroCoins').textContent=bd.coins||0;
+  document.getElementById('heroPts').textContent=(bd.total_points||0)+' total points';
+  document.getElementById('curS').textContent=st.current||0;
+  document.getElementById('bestS').textContent=st.best||0;
+  document.getElementById('mnthS').textContent=st.monthly_green||0;
+  document.getElementById('heroStreak').textContent=st.current||0;
+  document.getElementById('heroEarned').textContent=(bd.earned||[]).length;
+  if(st.milestone_50)document.getElementById('ms50').style.display='block';
+
+  // Build badges grid
+  const all=bd.all_badges||[];
+  document.getElementById('allBadges').innerHTML=all.map(b=>`
+    <div class="bdg-card ${b.earned?'earned':'locked'}" title="${b.description}">
+      <span class="${b.earned?'bdg-earned-icon':'bdg-icon'}">${b.icon}</span>
+      <div style="font-size:.78rem;font-weight:700;margin-bottom:3px">${b.name}</div>
+      <div style="font-size:.65rem;color:var(--txtd);line-height:1.3">${b.description}</div>
+      <div style="font-size:.68rem;margin-top:6px;color:${b.earned?'var(--amber)':'var(--txtm)'}">+${b.points} pts</div>
+      ${b.earned?'<div style="font-size:.62rem;color:var(--green);margin-top:2px">✅ Earned</div>':'<div style="font-size:.62rem;color:var(--txtm);margin-top:2px">🔒 Locked</div>'}
+    </div>`).join('');
+
+  // Heatmap
+  const today=new Date();
+  const cells=[];
+  const hm=st.heatmap||[];
+  for(let i=89;i>=0;i--){
+    const d=new Date(today);d.setDate(today.getDate()-i);
+    const key=d.toISOString().split('T')[0];
+    const e=hm.find(x=>x.date===key);
+    let cls='';
+    if(e){cls=e.green?(e.spend<100?'g1':e.spend<150?'g2':'g3'):'rd';}
+    cells.push(`<div class="hmc ${cls}" title="${key}${e?' — ₹'+Math.round(e.spend):''}"></div>`);
+  }
+  document.getElementById('hmG').innerHTML=cells.join('');
+
+  // Leaderboard
+  const lbData=lb.leaderboard||[];
+  const rankIcons=['🥇','🥈','🥉'];
+  document.getElementById('leaderboard').innerHTML=lbData.map((u,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(0,245,255,0.04)">
+      <div style="width:24px;text-align:center;font-size:${i<3?'1.2rem':'.84rem'};${i===0?'filter:drop-shadow(0 0 6px rgba(255,184,0,0.6))':''}">${i<3?rankIcons[i]:'#'+(i+1)}</div>
+      <div style="flex:1;font-size:.86rem;font-weight:${i<3?700:500}">${u.name}</div>
+      <div style="font-family:var(--ffm);font-size:.82rem;color:var(--amber)">${u.total_points} pts</div>
+      <div style="font-size:.72rem;color:var(--txtd)">🪙 ${u.coins}</div>
+    </div>`).join('');
+
+  // Challenges
+  document.getElementById('challenges').innerHTML=CHALLENGES.map(c=>`
+    <div class="card" style="padding:12px;display:flex;align-items:center;gap:10px">
+      <div style="font-size:1.5rem">${c.icon}</div>
+      <div style="flex:1">
+        <div style="font-size:.84rem;font-weight:700">${c.title}</div>
+        <div style="font-size:.7rem;color:var(--txtd);margin-top:1px">${c.desc}</div>
+      </div>
+      <div class="bdg ba2">+${c.pts} pts</div>
+    </div>`).join('');
+}
+
+function logout(){localStorage.clear();location.href='/login';}
+if(!T())location.href='/login';
+loadAll();
+</script>
+</body></html>

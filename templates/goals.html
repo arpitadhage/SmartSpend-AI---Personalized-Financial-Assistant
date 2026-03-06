@@ -1,0 +1,147 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Goals · SmartSpend AI</title>
+<link rel="stylesheet" href="/static/css/theme.css"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<style>
+.goal-card{background:var(--bgc);border:1px solid var(--bdr);border-radius:13px;padding:17px;transition:all .25s;position:relative;overflow:hidden}
+.goal-card:hover{border-color:rgba(0,245,255,0.22);transform:translateY(-2px)}
+.goal-card.done{border-color:rgba(0,230,118,0.2);background:rgba(0,230,118,0.03)}
+.goal-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,245,255,0.18),transparent)}
+</style>
+</head><body>
+<nav class="nav">
+  <a href="/" class="nav-brand"><div class="ico">🧠</div><div class="lbl">Smart<span>Spend</span></div></a>
+  <div class="nav-links">
+    <a href="/dashboard">Dashboard</a><a href="/expenses">Expenses</a>
+    <a href="/goals" class="active">Goals</a><a href="/splits">Splits</a>
+    <a href="/gamification">Rewards</a><a href="/predictor">Predictor</a>
+    <button class="btn-out" onclick="logout()">⏻ Exit</button>
+  </div>
+</nav>
+<div class="pg">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+    <div style="font-family:var(--ffd);font-size:.95rem;letter-spacing:.1em">//&nbsp;<span style="color:var(--green)">SAVINGS GOALS</span></div>
+    <button class="btn bg2" onclick="document.getElementById('addG').classList.add('open')"><i class="fas fa-plus"></i> New Goal</button>
+  </div>
+  <div id="goalsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px">
+    <div class="empty"><i class="fas fa-bullseye"></i><p>Loading goals...</p></div>
+  </div>
+</div>
+
+<!-- ADD GOAL MODAL -->
+<div class="mbg" id="addG">
+  <div class="modal">
+    <button class="mclose" onclick="document.getElementById('addG').classList.remove('open')">×</button>
+    <div class="mtitle">🎯 NEW SAVINGS GOAL</div>
+    <div class="fg"><label class="fl">Goal Name*</label><input class="fi" id="gN" placeholder="Buy a Laptop, Europe Trip..."/></div>
+    <div class="col2">
+      <div class="fg"><label class="fl">Target Amount (₹)*</label><input type="number" class="fi" id="gA" placeholder="60000"/></div>
+      <div class="fg"><label class="fl">Monthly Saving (₹)*</label><input type="number" class="fi" id="gM" placeholder="5000"/></div>
+    </div>
+    <div class="col2">
+      <div class="fg"><label class="fl">Category</label>
+        <select class="fs" id="gC">
+          <option value="electronics">💻 Electronics</option><option value="travel">✈️ Travel</option>
+          <option value="education">📚 Education</option><option value="vehicle">🚗 Vehicle</option>
+          <option value="health">💊 Health</option><option value="home">🏠 Home</option><option value="other">📦 Other</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Target Date</label><input type="date" class="fi" id="gD"/></div>
+    </div>
+    <button class="btn bg2" style="width:100%;justify-content:center" onclick="addGoal()"><i class="fas fa-bullseye"></i> Create Goal</button>
+  </div>
+</div>
+
+<!-- DEPOSIT MODAL -->
+<div class="mbg" id="depG">
+  <div class="modal">
+    <button class="mclose" onclick="document.getElementById('depG').classList.remove('open')">×</button>
+    <div class="mtitle">💰 ADD DEPOSIT</div>
+    <div id="depInfo" style="background:var(--bge);border-radius:9px;padding:11px;margin-bottom:14px;font-size:.84rem"></div>
+    <input type="hidden" id="depGId"/>
+    <div class="fg"><label class="fl">Deposit Amount (₹)</label><input type="number" class="fi" id="depA" placeholder="1000"/></div>
+    <button class="btn bc" style="width:100%;justify-content:center" onclick="doDeposit()"><i class="fas fa-plus-circle"></i> Add Deposit</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const T=()=>localStorage.getItem('token');
+const H=()=>({'Content-Type':'application/json','Authorization':'Bearer '+T()});
+
+async function loadGoals(){
+  const r=await fetch('/api/goals',{headers:H()});
+  const d=await r.json();
+  const el=document.getElementById('goalsGrid');
+  const goals=d.goals||[];
+  if(!goals.length){
+    el.innerHTML='<div class="empty" style="grid-column:1/-1"><i class="fas fa-bullseye"></i><p>No goals yet. <button class="btn bg2" style="margin-top:10px" onclick="document.getElementById(\'addG\').classList.add(\'open\')">+ Create First Goal</button></p></div>';
+    return;
+  }
+  el.innerHTML=goals.map(g=>{
+    const done=g.is_completed;
+    return `<div class="goal-card ${done?'done':''}">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:11px">
+        <div>
+          <div style="font-weight:700;font-size:.92rem;font-family:var(--ffb)">${g.goal_name}</div>
+          <span class="bdg ${done?'bg3':'bc2'}" style="margin-top:5px;display:inline-block">${done?'✅ Completed':'🎯 '+g.category}</span>
+        </div>
+        <div style="font-family:var(--ffm);font-size:.82rem;color:${done?'var(--green)':'var(--cyan)'};">${g.progress_pct}%</div>
+      </div>
+      <div class="pt" style="margin-bottom:7px"><div class="pf" style="width:${g.progress_pct}%;${done?'background:var(--green)':''}"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--txtd);margin-bottom:11px">
+        <span>₹${Math.round(g.current_savings).toLocaleString()} saved</span>
+        <span>₹${Math.round(g.goal_amount).toLocaleString()} target</span>
+      </div>
+      ${!done?`<div style="font-size:.72rem;color:var(--txtd);margin-bottom:11px">⏱ ~${g.months_left} months to go · ₹${Math.round(g.monthly_saving).toLocaleString()}/mo</div>`:''}
+      <div style="display:flex;gap:7px">
+        ${!done?`<button class="btn bg2" style="flex:1;justify-content:center;font-size:.75rem" onclick="openDep(${g.id},'${g.goal_name}',${g.goal_amount},${g.current_savings})">💰 Deposit</button>`:''}
+        <button class="btn bgh" style="font-size:.75rem;padding:6px 10px" onclick="delG(${g.id})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addGoal(){
+  const name=document.getElementById('gN').value.trim();
+  const amt=parseFloat(document.getElementById('gA').value)||0;
+  const monthly=parseFloat(document.getElementById('gM').value)||0;
+  if(!name||!amt||!monthly){showT('Fill all required fields','err');return;}
+  const r=await fetch('/api/goals/add',{method:'POST',headers:H(),body:JSON.stringify({goal_name:name,goal_amount:amt,monthly_saving:monthly,category:document.getElementById('gC').value,target_date:document.getElementById('gD').value})});
+  if(r.ok){showT('🎯 Goal created! +10 pts','ok');document.getElementById('addG').classList.remove('open');loadGoals();}
+}
+
+function openDep(id,name,target,current){
+  document.getElementById('depGId').value=id;
+  document.getElementById('depInfo').innerHTML=`<b>${name}</b><br>Progress: ₹${Math.round(current).toLocaleString()} / ₹${Math.round(target).toLocaleString()}`;
+  document.getElementById('depA').value='';
+  document.getElementById('depG').classList.add('open');
+}
+
+async function doDeposit(){
+  const id=document.getElementById('depGId').value;
+  const amt=parseFloat(document.getElementById('depA').value)||0;
+  if(!amt){showT('Enter amount','err');return;}
+  const r=await fetch(`/api/goals/${id}/deposit`,{method:'POST',headers:H(),body:JSON.stringify({amount:amt})});
+  const d=await r.json();
+  if(r.ok){
+    const msg=d.completed?'🏅 Goal Completed! Badge earned!':'💰 Deposit added! +5 pts';
+    showT(msg,'ok');
+    document.getElementById('depG').classList.remove('open');
+    loadGoals();
+  }
+}
+
+async function delG(id){
+  if(!confirm('Delete this goal?'))return;
+  await fetch(`/api/goals/${id}/delete`,{method:'DELETE',headers:H()});
+  showT('Deleted');loadGoals();
+}
+
+function showT(m,t=''){const el=document.getElementById('toast');el.textContent=m;el.className='toast'+(t?' '+t:'');el.style.display='block';setTimeout(()=>el.style.display='none',3200);}
+function logout(){localStorage.clear();location.href='/login';}
+if(!T())location.href='/login';
+loadGoals();
+</script>
+</body></html>

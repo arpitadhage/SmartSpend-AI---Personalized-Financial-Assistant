@@ -1,0 +1,357 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Dashboard · SmartSpend AI</title>
+<link rel="stylesheet" href="/static/css/theme.css"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+.gname{font-family:var(--ffd);font-size:1.15rem;letter-spacing:.07em;margin-bottom:2px}
+.gname span{color:var(--cyan)}
+.gsub{font-size:.78rem;color:var(--txtd)}
+.imp-bar{background:rgba(255,45,120,0.07);border:1px solid rgba(255,45,120,0.28);border-radius:9px;padding:10px 14px;color:#FF8FAB;font-size:.8rem;display:none;align-items:center;gap:8px;margin-bottom:16px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{border-color:rgba(255,45,120,0.28)}50%{border-color:rgba(255,45,120,0.6)}}
+.exp-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid rgba(0,245,255,0.04)}
+.exp-row:last-child{border-bottom:none}
+.eico{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.88rem;flex-shrink:0}
+.idot{width:5px;height:5px;border-radius:50%;background:var(--pink);display:inline-block;margin-left:4px;box-shadow:0 0 5px var(--pink)}
+.goal-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid rgba(0,245,255,0.04)}
+.goal-row:last-child{border-bottom:none}
+.pred{background:linear-gradient(135deg,rgba(0,245,255,0.07),rgba(155,93,229,0.05));border:1px solid rgba(0,245,255,0.18);border-radius:11px;padding:13px 15px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.srow{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(0,245,255,0.04);font-size:.76rem}
+.srow:last-child{border-bottom:none}
+.sim-box{background:rgba(0,245,255,0.03);border:1px solid var(--bdr);border-radius:11px;padding:14px;margin-top:12px;display:none}
+.risk-bar{height:8px;border-radius:4px;background:var(--bge);overflow:hidden;margin:8px 0}
+.risk-fill{height:100%;border-radius:4px;transition:width .5s}
+.streak-box{flex:1;background:var(--bge);border-radius:9px;padding:10px;text-align:center;border:1px solid var(--bdr)}
+.streak-num{font-family:var(--ffm);font-size:1.5rem;font-weight:700;line-height:1}
+.streak-lbl{font-size:.62rem;color:var(--txtd);margin-top:2px}
+.hm-leg{display:flex;align-items:center;gap:5px;margin-top:5px;font-size:.62rem;color:var(--txtd)}
+.hm-sw{width:8px;height:8px;border-radius:2px}
+</style>
+</head><body>
+<nav class="nav">
+  <a href="/" class="nav-brand"><div class="ico">🧠</div><div class="lbl">Smart<span>Spend</span></div></a>
+  <div class="nav-links">
+    <a href="/dashboard" class="active">Dashboard</a>
+    <a href="/expenses">Expenses</a>
+    <a href="/goals">Goals</a>
+    <a href="/splits">Splits</a>
+    <a href="/gamification">Rewards</a>
+    <a href="/predictor">Predictor</a>
+    <button class="btn-out" onclick="logout()">⏻ Exit</button>
+  </div>
+</nav>
+<div class="pg">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+    <div>
+      <div class="gname">WELCOME BACK, <span id="uname">USER</span></div>
+      <div class="gsub" id="gtime">Financial Intelligence Dashboard</div>
+    </div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <button class="btn bc" onclick="location.href='/expenses'"><i class="fas fa-plus"></i> Add Expense</button>
+      <button class="btn bv" onclick="document.getElementById('simMod').classList.add('open')"><i class="fas fa-calculator"></i> Simulator</button>
+    </div>
+  </div>
+
+  <!-- Impulse alert -->
+  <div class="imp-bar" id="impBar">⚠️ <strong>Impulse Spending Detected</strong> in recent transactions! Review your Expenses.</div>
+
+  <!-- STAT GRID -->
+  <div class="sgrid">
+    <div class="sc"><div class="bot" style="background:var(--cyan)"></div><div class="slbl">Month Spend</div><div class="sval gc" id="sSpend">₹0</div><div class="ssub" id="sSpendSub">0 transactions</div></div>
+    <div class="sc"><div class="bot" style="background:var(--pink)"></div><div class="slbl">Impulse %</div><div class="sval gp" id="sImp">0%</div><div class="ssub">of total spend</div></div>
+    <div class="sc"><div class="bot" style="background:var(--green)"></div><div class="slbl">Active Goals</div><div class="sval gg" id="sGoals">0</div><div class="ssub" id="sGoalSub">goals active</div></div>
+    <div class="sc"><div class="bot" style="background:var(--amber)"></div><div class="slbl">Streak 🔥</div><div class="sval ga" id="sStreak">0</div><div class="ssub">days under ₹200</div></div>
+    <div class="sc"><div class="bot" style="background:var(--purple)"></div><div class="slbl">Points 🪙</div><div class="sval gv" id="sPts">0</div><div class="ssub" id="sCoins">0 coins</div></div>
+    <div class="sc"><div class="bot" style="background:linear-gradient(90deg,var(--cyan),var(--purple))"></div><div class="slbl">AI Forecast</div><div class="sval gc" id="sFcast">₹–</div><div class="ssub">next month</div></div>
+  </div>
+
+  <div class="sidebar">
+    <!-- LEFT -->
+    <div>
+      <!-- Spend Chart -->
+      <div class="card hc" style="margin-bottom:14px">
+        <div class="sl"><i class="fas fa-chart-area" style="color:var(--cyan)"></i> 14-Day Spend (pink = over ₹200/day)</div>
+        <canvas id="sChart" height="100"></canvas>
+      </div>
+      <!-- Category -->
+      <div class="card hc" style="margin-bottom:14px">
+        <div class="sl"><i class="fas fa-chart-pie" style="color:var(--purple)"></i> Category Breakdown</div>
+        <div style="display:grid;grid-template-columns:1fr 145px;gap:12px;align-items:center">
+          <div id="catBars"></div>
+          <div style="position:relative;display:flex;align-items:center;justify-content:center">
+            <canvas id="cChart" width="140" height="140"></canvas>
+            <div style="position:absolute;text-align:center;pointer-events:none">
+              <div style="font-family:var(--ffm);font-size:.8rem;font-weight:700" id="dTotal"></div>
+              <div style="font-size:.58rem;color:var(--txtd)">total</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Recent Expenses -->
+      <div class="card hc" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
+          <div class="sl" style="margin:0"><i class="fas fa-receipt" style="color:var(--cyan)"></i> Recent Expenses</div>
+          <a href="/expenses" style="font-size:.72rem;color:var(--cyan);text-decoration:none">All →</a>
+        </div>
+        <div id="recentList"><div class="empty"><p>Loading…</p></div></div>
+      </div>
+      <!-- Goals -->
+      <div class="card hg">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px">
+          <div class="sl" style="margin:0"><i class="fas fa-bullseye" style="color:var(--green)"></i> Active Goals</div>
+          <a href="/goals" style="font-size:.72rem;color:var(--green);text-decoration:none">Manage →</a>
+        </div>
+        <div id="goalsList"><div class="empty"><p>No goals yet</p></div></div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <div>
+      <!-- HEALTH SCORE -->
+      <div class="card hp" style="margin-bottom:13px;text-align:center">
+        <div class="sl" style="justify-content:center"><i class="fas fa-heartbeat" style="color:var(--pink)"></i> Financial Health Score</div>
+        <div style="position:relative;display:inline-flex;align-items:center;justify-content:center;margin:4px 0">
+          <svg width="110" height="110" viewBox="0 0 110 110">
+            <circle cx="55" cy="55" r="46" fill="none" stroke="rgba(0,245,255,0.07)" stroke-width="9"/>
+            <circle id="hArc" cx="55" cy="55" r="46" fill="none" stroke="url(#hg)" stroke-width="9" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="289" transform="rotate(-90 55 55)" style="transition:stroke-dashoffset 1.2s ease"/>
+            <defs><linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:var(--cyan)"/><stop offset="100%" style="stop-color:var(--purple)"/></linearGradient></defs>
+          </svg>
+          <div style="position:absolute;text-align:center">
+            <div style="font-family:var(--ffm);font-size:1.4rem;font-weight:700" id="hNum">–</div>
+            <div style="font-size:.58rem;color:var(--txtd)">/100</div>
+          </div>
+        </div>
+        <div id="hGrade" class="bdg bc2" style="font-size:.72rem">–</div>
+        <div style="margin-top:12px">
+          <div class="srow"><span style="color:var(--txtd)">Impulse Rate</span><b id="hImp" style="color:var(--pink)">–</b></div>
+          <div class="srow"><span style="color:var(--txtd)">Streak Days</span><b id="hStr" style="color:var(--green)">–</b></div>
+          <div class="srow"><span style="color:var(--txtd)">Active Goals</span><b id="hG" style="color:var(--cyan)">–</b></div>
+          <div class="srow"><span style="color:var(--txtd)">Points</span><b id="hP" style="color:var(--purple)">–</b></div>
+        </div>
+      </div>
+
+      <!-- STREAK HEATMAP -->
+      <div class="card ha" style="margin-bottom:13px">
+        <div class="sl"><i class="fas fa-fire" style="color:var(--amber)"></i> Spending Streak · Last 90 Days</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <div class="streak-box"><div class="streak-num ga" id="curS">0</div><div class="streak-lbl">Current 🔥</div></div>
+          <div class="streak-box"><div class="streak-num gv" id="bestS">0</div><div class="streak-lbl">Best 🏆</div></div>
+          <div class="streak-box"><div class="streak-num gg" id="wkS">0</div><div class="streak-lbl">This Week</div></div>
+        </div>
+        <div style="font-size:.62rem;color:var(--txtm);margin-bottom:4px">Under ₹200/day = 🟢 green day</div>
+        <div class="hmg" id="hmGrid"></div>
+        <div class="hm-leg">
+          <div class="hm-sw" style="background:var(--bge);border:1px solid rgba(0,245,255,0.1)"></div>No data
+          <div class="hm-sw g2" style="background:rgba(0,230,118,0.5);margin-left:5px"></div>Under ₹200
+          <div class="hm-sw rd" style="background:rgba(255,45,120,0.3);margin-left:5px"></div>Over ₹200
+        </div>
+        <div id="ms50" style="display:none;margin-top:9px;background:rgba(255,184,0,0.07);border:1px solid rgba(255,184,0,0.28);border-radius:7px;padding:7px 11px;font-size:.76rem;color:var(--amber);text-align:center">🏆 50-Day Streak Badge Unlocked!</div>
+      </div>
+
+      <!-- AI FORECAST -->
+      <div class="pred">
+        <div>
+          <div style="font-size:.62rem;color:var(--txtd);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px">AI Forecast</div>
+          <div style="font-family:var(--ffm);font-size:1.25rem;font-weight:700;color:var(--cyan)" id="fcastAmt">₹–</div>
+          <div style="font-size:.68rem;color:var(--txtd);margin-top:1px">predicted next month</div>
+        </div>
+        <i class="fas fa-wand-magic-sparkles" style="font-size:1.5rem;color:rgba(0,245,255,0.2)"></i>
+      </div>
+
+      <!-- BADGES -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="sl" style="margin:0"><i class="fas fa-medal" style="color:var(--amber)"></i> Badges Earned</div>
+          <a href="/gamification" style="font-size:.7rem;color:var(--cyan);text-decoration:none">All →</a>
+        </div>
+        <div id="bdgWrap" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SIMULATOR MODAL -->
+<div class="mbg" id="simMod">
+  <div class="modal">
+    <button class="mclose" onclick="document.getElementById('simMod').classList.remove('open')">×</button>
+    <div class="mtitle">⚡ PURCHASE SIMULATOR</div>
+    <div class="fg"><label class="fl">Item Name</label><input class="fi" id="siName" placeholder="Headphones, iPhone, Bike..."/></div>
+    <div class="fg"><label class="fl">Amount (₹)</label><input type="number" class="fi" id="siAmt" placeholder="3000"/></div>
+    <button class="btn bp" style="width:100%;justify-content:center" onclick="runSim()"><i class="fas fa-bolt"></i> Simulate Impact</button>
+    <div class="sim-box" id="simRes"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const T=()=>localStorage.getItem('token');
+const H=()=>({'Content-Type':'application/json','Authorization':'Bearer '+T()});
+const CC={food:'#FFB800',transport:'#2979FF',shopping:'#FF2D78',entertainment:'#9B5DE5',health:'#00E676',utilities:'#00F5FF',groceries:'#69F0AE',travel:'#FF6D00',subscriptions:'#AA00FF',other:'#455A64'};
+const CI={food:'🍔',transport:'🚗',shopping:'🛍️',entertainment:'🎬',health:'💊',utilities:'💡',groceries:'🛒',travel:'✈️',subscriptions:'📱',other:'📦'};
+let SC=null,CC2=null;
+
+async function load(){
+  if(!T()){location.href='/login';return;}
+  const r=await fetch('/api/dashboard',{headers:H()});
+  if(!r.ok){localStorage.clear();location.href='/login';return;}
+  const d=await r.json();
+  // Greeting
+  const hr=new Date().getHours();
+  const g=hr<12?'GOOD MORNING':hr<17?'GOOD AFTERNOON':'GOOD EVENING';
+  document.getElementById('uname').textContent=d.user.name.toUpperCase();
+  document.getElementById('gtime').textContent=`${g} · ${new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}`;
+  // Stats
+  document.getElementById('sSpend').textContent='₹'+Math.round(d.stats.month_total).toLocaleString();
+  document.getElementById('sSpendSub').textContent=`${d.stats.completed_goals} goals completed`;
+  document.getElementById('sImp').textContent=d.stats.impulse_pct+'%';
+  document.getElementById('sGoals').textContent=d.stats.active_goals;
+  document.getElementById('sStreak').textContent=d.stats.cur_streak;
+  document.getElementById('sPts').textContent=d.stats.points;
+  document.getElementById('sCoins').textContent=`${d.stats.coins||0} coins`;
+  document.getElementById('sFcast').textContent='₹'+Math.round(d.predicted||0).toLocaleString();
+  document.getElementById('fcastAmt').textContent='₹'+Math.round(d.predicted||0).toLocaleString();
+  if((d.stats.impulse_pct||0)>12)document.getElementById('impBar').style.display='flex';
+  // Health score ring
+  const sc=d.health.score||0;
+  document.getElementById('hNum').textContent=sc;
+  document.getElementById('hArc').style.strokeDashoffset=289-(289*(sc/100));
+  const ge=document.getElementById('hGrade');
+  ge.textContent=`${d.health.grade} · ${d.health.label}`;
+  ge.className='bdg '+(sc>=80?'bg3':sc>=60?'bc2':sc>=40?'ba2':'bp2');
+  document.getElementById('hImp').textContent=d.health.impulse_pct+'%';
+  document.getElementById('hStr').textContent=d.stats.cur_streak+' days';
+  document.getElementById('hG').textContent=d.stats.active_goals;
+  document.getElementById('hP').textContent=d.stats.points;
+  // Streak
+  document.getElementById('curS').textContent=d.streak.current;
+  document.getElementById('bestS').textContent=d.streak.best;
+  buildHM(d.heatmap||[]);
+  if(d.streak.current>=50)document.getElementById('ms50').style.display='block';
+  // Week streak
+  const wk=(d.heatmap||[]).filter(x=>{const dt=new Date(x.date);const now=new Date();const diff=(now-dt)/86400000;return diff<7;});
+  document.getElementById('wkS').textContent=wk.filter(x=>x.green).length;
+  // Charts
+  buildSpend(d.by_day||{});
+  buildCat(d.by_category||{},d.stats.month_total||0);
+  // Goals
+  buildGoals(d.active_goals||[]);
+  // Badges
+  buildBadges(d.badges||[]);
+  // Recent
+  buildRecent(d.recent_expenses||[]);
+}
+
+function buildHM(data){
+  const grid=document.getElementById('hmGrid');
+  const today=new Date();
+  const cells=[];
+  for(let i=89;i>=0;i--){
+    const d=new Date(today);d.setDate(today.getDate()-i);
+    const key=d.toISOString().split('T')[0];
+    const e=data.find(x=>x.date===key);
+    let cls='';
+    if(e){cls=e.green?(e.spend<100?'g1':e.spend<150?'g2':'g3'):'rd';}
+    cells.push(`<div class="hmc ${cls}" title="${key}${e?' — ₹'+Math.round(e.spend):''}"></div>`);
+  }
+  grid.innerHTML=cells.join('');
+}
+
+function buildSpend(bd){
+  const entries=Object.entries(bd).slice(-14);
+  if(!entries.length)return;
+  if(SC)SC.destroy();
+  const ctx=document.getElementById('sChart');
+  SC=new Chart(ctx,{type:'bar',data:{
+    labels:entries.map(([d])=>new Date(d).toLocaleDateString('en-IN',{day:'numeric',month:'short'})),
+    datasets:[{data:entries.map(([,v])=>v),
+      backgroundColor:entries.map(([,v])=>v>200?'rgba(255,45,120,0.45)':'rgba(0,245,255,0.35)'),
+      borderColor:entries.map(([,v])=>v>200?'rgba(255,45,120,0.8)':'rgba(0,245,255,0.8)'),
+      borderWidth:1,borderRadius:4}]
+  },options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' ₹'+Math.round(c.raw).toLocaleString()}}},
+    scales:{x:{grid:{color:'rgba(0,245,255,0.04)'},ticks:{color:'#4A7A9B',font:{size:9}}},
+            y:{grid:{color:'rgba(0,245,255,0.04)'},ticks:{color:'#4A7A9B',font:{size:9},callback:v=>'₹'+v}}}}});
+}
+
+function buildCat(cats,total){
+  const entries=Object.entries(cats).slice(0,6);
+  const el=document.getElementById('catBars');
+  document.getElementById('dTotal').textContent='₹'+Math.round(total).toLocaleString();
+  if(!entries.length){el.innerHTML='<div class="empty"><p>No data yet</p></div>';return;}
+  el.innerHTML=entries.map(([cat,amt])=>{
+    const pct=(amt/total*100).toFixed(1);
+    return `<div style="margin-bottom:7px">
+      <div style="display:flex;justify-content:space-between;font-size:.73rem;margin-bottom:3px">
+        <span style="color:var(--txtd)">${CI[cat]||'📦'} ${cat}</span>
+        <span style="font-family:var(--ffm)">₹${Math.round(amt).toLocaleString()}</span>
+      </div>
+      <div class="pt"><div class="pf" style="width:${pct}%;background:${CC[cat]||'#455A64'};box-shadow:0 0 6px ${CC[cat]||'#455A64'}44"></div></div>
+    </div>`;
+  }).join('');
+  if(CC2)CC2.destroy();
+  CC2=new Chart(document.getElementById('cChart'),{type:'doughnut',
+    data:{labels:entries.map(([k])=>k),datasets:[{data:entries.map(([,v])=>v),backgroundColor:entries.map(([k])=>CC[k]||'#455A64'),borderWidth:0,hoverOffset:4}]},
+    options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' ₹'+Math.round(c.raw).toLocaleString()}}},cutout:'70%',animation:{duration:900}}});
+}
+
+function buildGoals(goals){
+  const el=document.getElementById('goalsList');
+  if(!goals.length){el.innerHTML='<div class="empty"><i class="fas fa-flag"></i><p>No goals. <a href="/goals" style="color:var(--green)">Add one →</a></p></div>';return;}
+  el.innerHTML=goals.slice(0,5).map(g=>`<div class="goal-row">
+    <div style="font-size:1.1rem">🎯</div>
+    <div style="flex:1">
+      <div style="font-size:.86rem;font-weight:600">${g.goal_name}</div>
+      <div class="pt" style="margin:4px 0 2px"><div class="pf" style="width:${g.progress_pct}%"></div></div>
+      <div style="font-size:.68rem;color:var(--txtd)">₹${Math.round(g.current_savings).toLocaleString()} / ₹${Math.round(g.goal_amount).toLocaleString()} · ~${g.months_left}mo left</div>
+    </div>
+    <div style="font-family:var(--ffm);font-size:.82rem;color:var(--cyan)">${g.progress_pct}%</div>
+  </div>`).join('');
+}
+
+function buildBadges(bs){
+  const el=document.getElementById('bdgWrap');
+  el.innerHTML=bs.length?bs.map(b=>`<span title="${b.badge_name}" style="font-size:1.4rem;filter:drop-shadow(0 0 5px rgba(255,184,0,0.4));cursor:default">${b.icon}</span>`).join(''):'<span style="font-size:.76rem;color:var(--txtm)">Complete goals to earn badges</span>';
+}
+
+function buildRecent(exps){
+  const el=document.getElementById('recentList');
+  if(!exps.length){el.innerHTML='<div class="empty"><i class="fas fa-receipt"></i><p>No expenses yet</p></div>';return;}
+  el.innerHTML=exps.map(e=>{
+    const dt=new Date(e.expense_date);
+    return `<div class="exp-row">
+      <div class="eico" style="background:${CC[e.category]||'#455A64'}18">${CI[e.category]||'📦'}</div>
+      <div style="flex:1">
+        <div style="font-size:.86rem;font-weight:600">${e.merchant||e.description||'Expense'}${e.is_impulse?'<span class="idot" title="Impulse spend"></span>':''}</div>
+        <div style="font-size:.7rem;color:var(--txtd)">${e.category} · ${dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</div>
+      </div>
+      <div style="font-family:var(--ffm);font-size:.86rem;color:var(--pink)">–₹${Math.round(e.amount).toLocaleString()}</div>
+    </div>`;
+  }).join('');
+}
+
+async function runSim(){
+  const name=document.getElementById('siName').value||'Item';
+  const amt=parseFloat(document.getElementById('siAmt').value)||0;
+  if(!amt){showT('Enter an amount','err');return;}
+  const r=await fetch('/api/expenses/simulate',{method:'POST',headers:H(),body:JSON.stringify({item_name:name,amount:amt})});
+  const d=await r.json();
+  const rc=d.budget_risk==='HIGH'?'var(--pink)':d.budget_risk==='MEDIUM'?'var(--amber)':'var(--green)';
+  const el=document.getElementById('simRes');
+  el.style.display='block';
+  el.innerHTML=`
+    <div style="font-weight:700;margin-bottom:11px">If you buy <span style="color:var(--cyan)">${name}</span> for ₹${amt.toLocaleString()}:</div>
+    <div style="font-size:.82rem;display:grid;gap:6px">
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--txtd)">Savings Impact</span><b style="color:${rc};font-family:var(--ffm)">${d.savings_impact}%</b></div>
+      <div class="risk-bar"><div class="risk-fill" style="width:${Math.min(d.savings_impact,100)}%;background:${rc}"></div></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--txtd)">Monthly Budget Hit</span><b style="color:${rc};font-family:var(--ffm)">${d.monthly_impact}%</b></div>
+      <div style="display:flex;justify-content:space-between;margin-top:2px"><span style="color:var(--txtd)">Risk Level</span><b style="color:${rc}">${d.budget_risk}</b></div>
+    </div>
+    ${d.goal_delays.map(x=>`<div style="font-size:.72rem;color:var(--txtd);margin-top:4px">⏳ Delays "${x.goal}" by ~${x.delay_months} months</div>`).join('')}
+    <div style="margin-top:9px;font-size:.82rem;border-top:1px solid var(--bdr);padding-top:9px">${d.recommendation}</div>`;
+}
+
+function showT(m,t=''){const el=document.getElementById('toast');el.textContent=m;el.className='toast'+(t?' '+t:'');el.style.display='block';setTimeout(()=>el.style.display='none',3000);}
+function logout(){localStorage.clear();location.href='/login';}
+load();
+</script>
+</body></html>
