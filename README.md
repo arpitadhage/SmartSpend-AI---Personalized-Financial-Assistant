@@ -32,11 +32,11 @@ Visit: http://localhost:5000
 
 | Dashboard | Expense Tracker |
 |----------|----------------|
-| ![](screenshots/dashboard.png) | ![](screenshots/expenses.png) |
+| ![](screenshots/dashboard.png) | ![](screenshots/dashboard1.png) |
 
 | Goal Predictor | Login |
 |---------------|-------|
-| ![](screenshots/predictor.png) | ![](screenshots/login.png) |
+| ![](screenshots/predictor.png) | ![](screenshots/rewards.png) |
 
 ## Tech Stack
 - **Backend**: Flask + SQLite (built-in, no extra DB setup)
